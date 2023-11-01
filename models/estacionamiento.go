@@ -1,12 +1,10 @@
 package models
 
 import (
-	"time"
-
 	"fmt"
+	"math/rand"
 	"sync"
-    "math/rand"
-    
+	"time"
 )
 
 type Estacionamiento struct {
@@ -40,7 +38,6 @@ func (e *Estacionamiento) Salir(auto Auto) {
 	}
 }
 
-
 func SimularEstacionamiento(numAutos int, numCajones int) {
 	cajonesEstacionamiento := make([]int, numCajones)
 	estacionamiento := &Estacionamiento{Cajones: cajonesEstacionamiento}
@@ -61,11 +58,11 @@ func SimularEstacionamiento(numAutos int, numCajones int) {
 
 	for i := 1; i <= numAutos; i++ {
 		go CrearAuto(i, estacionamiento, entrando, saliendo)
-		
-        // Simulación de llegadas a través de distribución poison.
-        lambda := 0.2
-        poisson := rand.ExpFloat64() / lambda
-        time.Sleep(time.Duration(poisson) * time.Second)
+
+		// Simulación de llegadas a través de distribución poison.
+		lambda := 0.2
+		poisson := rand.ExpFloat64() / lambda
+		time.Sleep(time.Duration(poisson) * time.Second)
 	}
 
 	time.Sleep(10 * time.Second)

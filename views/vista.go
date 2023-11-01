@@ -21,72 +21,56 @@ func IniciarVentana() {
 	estacionamientoImagen := canvas.NewImageFromFile("assets/fondo.png")
 	estacionamientoImagen.FillMode = canvas.ImageFillOriginal
 
-	// Cargar la imagen del primer carro
-	autoImagen := canvas.NewImageFromFile("assets/car.png")
-	autoImagen.FillMode = canvas.ImageFillOriginal
+	vista := container.NewHBox(layout.NewSpacer(), estacionamientoImagen, layout.NewSpacer())
 
-	// Cargar la imagen del segundo carro
-	autoImagen2 := canvas.NewImageFromFile("assets/car.png") // Cambiar la imagen si es diferente
-	autoImagen2.FillMode = canvas.ImageFillOriginal
-
-	vista := container.NewHBox(layout.NewSpacer(), estacionamientoImagen, autoImagen, autoImagen2, layout.NewSpacer())
 	iniciarBoton := widget.NewButton("Iniciar", func() {
 		// Iniciar la simulación de llegada continua de vehículos desde el paquete models
-		go models.SimularEstacionamiento(2, 20) // Cambiar a 2 carros
+		cantidadCarros := 10
+		espaciadoX := 44
 
-		// Coordenadas iniciales y cajón del primer carro
-		posX := float32(0)
-		posY := float32(0)
-		cajonX := float32(107)
-		cajonY := float32(60)
+		for i := 0; i < cantidadCarros; i++ {
+			autoImagen := canvas.NewImageFromFile("assets/car.png")
+			autoImagen.FillMode = canvas.ImageFillOriginal
 
-		// Coordenadas iniciales y cajón del segundo carro
-		posX2 := float32(0)
-		posY2 := float32(0)
-		cajonX2 := float32(138) // Cambiar a la posición X del segundo cajón
-		cajonY2 := float32(60)  // Cambiar a la posición Y del segundo cajón
+			posX := float32(0)
+			posY := float32(10)
+			cajonX := float32(100 + espaciadoX*i)
+			cajonY := float32(70)
 
-		// Crear una función para mover el primer carro hacia el cajón
-		moverHaciaCajon := func() {
-			for {
-				if posX < cajonX {
-					posX += 2
-				} else if posY < cajonY {
-					posY += 2
-				} else {
-					// El primer carro ha llegado al primer cajón
-					break
+			moverHaciaCajon := func() {
+				for {
+					if posX < cajonX {
+						posX += 2
+					} else if posY < cajonY {
+						posY += 2
+					} else {
+						break
+					}
+
+					autoImagen.Move(fyne.NewPos(posX, posY))
+					myWindow.Canvas().Refresh(autoImagen)
+					time.Sleep(10 * time.Millisecond)
 				}
 
-				// Actualizar la posición de la imagen del primer carro en la vista
-				autoImagen.Move(fyne.NewPos(posX, posY))
-				myWindow.Canvas().Refresh(autoImagen)
-				time.Sleep(100 * time.Millisecond)
-			}
-		}
+				// Después de llegar al cajón, mover hacia abajo
+				for {
+					if posY < 60 { // Cambia esta condición según tu necesidad
+						posY += 2
+					} else {
+						break
+					}
 
-		// Crear una función para mover el segundo carro hacia el cajón
-		moverHaciaCajon2 := func() {
-			for {
-				if posX2 < cajonX2 {
-					posX2 += 2
-				} else if posY2 < cajonY2 {
-					posY2 += 2
-				} else {
-					// El segundo carro ha llegado al segundo cajón
-					break
+					autoImagen.Move(fyne.NewPos(posX, posY))
+					myWindow.Canvas().Refresh(autoImagen)
+					time.Sleep(10 * time.Millisecond)
 				}
-
-				// Actualizar la posición de la imagen del segundo carro en la vista
-				autoImagen2.Move(fyne.NewPos(posX2, posY2))
-				myWindow.Canvas().Refresh(autoImagen2)
-				time.Sleep(100 * time.Millisecond)
 			}
+
+			vista.Add(autoImagen)
+			go moverHaciaCajon()
 		}
 
-		// Iniciar la función de movimiento hacia el cajón para ambos carros en segundo plano
-		go moverHaciaCajon()
-		go moverHaciaCajon2() // Agregar el segundo carro
+		go models.SimularEstacionamiento(cantidadCarros, cantidadCarros)
 	})
 
 	vistaConBoton := container.NewVBox(iniciarBoton, vista)
