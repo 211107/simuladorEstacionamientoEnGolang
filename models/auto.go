@@ -1,26 +1,131 @@
-// models/auto.go
 package models
 
 import (
-	"time"
 	"math/rand"
+	"sync"
+	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/storage"
 )
 
 type Auto struct {
-	Id int
+	id              int
+	tiempoLim       time.Duration
+	espacioAsignado int
+	imagenEntrada   *canvas.Image
+	imagenEspera    *canvas.Image
+	imagenSalida    *canvas.Image
 }
 
-func CrearAuto(id int, estacionamiento *Estacionamiento, entrando chan<- Auto, saliendo chan<- Auto) {
-	auto := Auto{Id: id} // Aquí está la corrección
-
-	go func() {
-		// Intentar entrar al estacionamiento
-		entrando <- auto
-
-		// Esperar un tiempo aleatorio entre 1 y 5 segundos
-		time.Sleep(time.Duration(rand.Intn(5)+1) * time.Second)
-
-		// Intentar salir del estacionamiento
-		saliendo <- auto
-	}()
+func NewAuto(id int) *Auto {
+	imagenEntrada := canvas.NewImageFromURI(storage.NewFileURI("./assets/carEntra.png"))
+	imagenEspera := canvas.NewImageFromURI(storage.NewFileURI("./assets/carEspera.png"))
+	imagenSalida := canvas.NewImageFromURI(storage.NewFileURI("./assets/carSalida.png"))
+	return &Auto{
+		id:              id,
+		tiempoLim:       time.Duration(rand.Intn(50)+50) * time.Second,
+		espacioAsignado: 0,
+		imagenEntrada:   imagenEntrada,
+		imagenEspera:    imagenEspera,
+		imagenSalida:    imagenSalida,
+	}
 }
+
+func (a *Auto) Entrar(p *Estacionamiento, contenedor *fyne.Container) {
+	p.GetEspacios() <- a.GetId()
+	p.GetPuertaMu().Lock()
+
+	espacios := p.GetEspaciosArray()
+	const (
+		columnasPorGrupo  = 10
+		espacioHorizontal = 57
+		espacioVertical   = 320
+	)
+
+	for i := 0; i < len(espacios); i++ {
+		if !espacios[i] {
+			espacios[i] = true
+			a.espacioAsignado = i
+
+			fila := i / (columnasPorGrupo * 1)
+			columna := i % (columnasPorGrupo * 1)
+
+			if columna >= columnasPorGrupo {
+				columna += 1
+			}
+
+			x := float32(133 + columna*espacioHorizontal)
+			if columna >= columnasPorGrupo {
+
+			}
+			y := float32(10 + fila*espacioVertical)
+
+			a.imagenEntrada.Move(fyne.NewPos(x, y))
+			break
+		}
+	}
+
+	p.SetEspaciosArray(espacios)
+
+	p.GetPuertaMu().Unlock()
+	contenedor.Refresh()
+}
+
+func (a *Auto) Salir(p *Estacionamiento, contenedor *fyne.Container) {
+	<-p.GetEspacios()
+	p.GetPuertaMu().Lock()
+
+	spacesArray := p.GetEspaciosArray()
+	spacesArray[a.espacioAsignado] = false
+	p.SetEspaciosArray(spacesArray)
+
+	p.GetPuertaMu().Unlock()
+
+	contenedor.Remove(a.imagenEspera)
+	a.imagenSalida.Resize(fyne.NewSize(30, 50))
+	a.imagenSalida.Move(fyne.NewPos(90, 290))
+
+	contenedor.Add(a.imagenSalida)
+	contenedor.Refresh()
+
+	for i := 0; i < 10; i++ {
+		a.imagenSalida.Move(fyne.NewPos(a.imagenSalida.Position().X, a.imagenSalida.Position().Y-30))
+		time.Sleep(time.Millisecond * 200)
+	}
+
+	contenedor.Remove(a.imagenSalida)
+	contenedor.Refresh()
+}
+
+func (a *Auto) Iniciar(p *Estacionamiento, contenedor *fyne.Container, wg *sync.WaitGroup) {
+	a.Avanzar(9)
+
+	a.Entrar(p, contenedor)
+
+	time.Sleep(a.tiempoLim)
+
+	contenedor.Remove(a.imagenEntrada)
+	a.imagenEspera.Resize(fyne.NewSize(50, 30))
+	p.ColaSalida(contenedor, a.imagenEspera)
+	a.Salir(p, contenedor)
+	wg.Done()
+}
+
+func (a *Auto) Avanzar(pasos int) {
+	for i := 0; i < pasos; i++ {
+		a.imagenEntrada.Move(fyne.NewPos(a.imagenEntrada.Position().X, a.imagenEntrada.Position().Y+20))
+		time.Sleep(time.Millisecond * 100)
+	}
+}
+
+func (a *Auto) GetId() int {
+	return a.id
+}
+
+func (a *Auto) GetImagenEntrada() *canvas.Image {
+	return a.imagenEntrada
+}
+
+

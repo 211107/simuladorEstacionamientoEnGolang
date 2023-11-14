@@ -1,69 +1,44 @@
 package models
 
 import (
-	"fmt"
-	"math/rand"
 	"sync"
-	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 )
 
 type Estacionamiento struct {
-	Cajones []int
-	Mux     sync.Mutex
+	espacios      chan int
+	puerta        *sync.Mutex
+	espaciosArray [20]bool
 }
 
-func (e *Estacionamiento) Entrar(auto Auto) {
-	e.Mux.Lock()
-	defer e.Mux.Unlock()
-
-	for i := 0; i < len(e.Cajones); i++ {
-		if e.Cajones[i] == 0 {
-			e.Cajones[i] = auto.Id
-			fmt.Printf("Auto %d ha entrado al cajón %d\n", auto.Id, i)
-			break
-		}
+func NewEstacionamiento(espacios chan int, puertaMu *sync.Mutex) *Estacionamiento {
+	return &Estacionamiento{
+		espacios:      espacios,
+		puerta:        puertaMu,
+		espaciosArray: [20]bool{},
 	}
 }
 
-func (e *Estacionamiento) Salir(auto Auto) {
-	e.Mux.Lock()
-	defer e.Mux.Unlock()
-
-	for i := 0; i < len(e.Cajones); i++ {
-		if e.Cajones[i] == auto.Id {
-			e.Cajones[i] = 0
-			fmt.Printf("Auto %d ha salido del cajón %d\n", auto.Id, i)
-			break
-		}
-	}
+func (p *Estacionamiento) GetEspacios() chan int {
+	return p.espacios
 }
 
-func SimularEstacionamiento(numAutos int, numCajones int) {
-	cajonesEstacionamiento := make([]int, numCajones)
-	estacionamiento := &Estacionamiento{Cajones: cajonesEstacionamiento}
+func (p *Estacionamiento) GetPuertaMu() *sync.Mutex {
+	return p.puerta
+}
 
-	entrando := make(chan Auto, numAutos)
-	saliendo := make(chan Auto, numAutos)
+func (p *Estacionamiento) GetEspaciosArray() [20]bool {
+	return p.espaciosArray
+}
 
-	go func() {
-		for {
-			select {
-			case auto := <-entrando:
-				estacionamiento.Entrar(auto)
-			case auto := <-saliendo:
-				estacionamiento.Salir(auto)
-			}
-		}
-	}()
+func (p *Estacionamiento) SetEspaciosArray(espaciosArray [20]bool) {
+	p.espaciosArray = espaciosArray
+}
 
-	for i := 1; i <= numAutos; i++ {
-		go CrearAuto(i, estacionamiento, entrando, saliendo)
-
-		// Simulación de llegadas a través de distribución poison.
-		lambda := 0.2
-		poisson := rand.ExpFloat64() / lambda
-		time.Sleep(time.Duration(poisson) * time.Second)
-	}
-
-	time.Sleep(10 * time.Second)
+func (p *Estacionamiento) ColaSalida(contenedor *fyne.Container, imagen *canvas.Image) {
+	imagen.Move(fyne.NewPos(80, 20))
+	contenedor.Add(imagen)
+	contenedor.Refresh()
 }
