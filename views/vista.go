@@ -1,4 +1,4 @@
-// mainView.go
+
 package views
 
 import (

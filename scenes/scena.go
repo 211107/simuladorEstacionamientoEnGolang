@@ -56,30 +56,34 @@ func (s *MainScene) Show() {
 
 
 func (s *MainScene) Run() {
-	p := models.NewEstacionamiento(make(chan int, 20), &sync.Mutex{})
-	contenedor := s.window.Content().(*fyne.Container) // Obtén el contenedor actual
+    p := models.NewEstacionamiento(make(chan int, 20), &sync.Mutex{})
+    contenedor := s.window.Content().(*fyne.Container)
 
-	var wg sync.WaitGroup
+    var wg sync.WaitGroup
 
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		go func(id int) {
-			auto := models.NewAuto(id)
-			imagen := auto.GetImagenEntrada()
-			imagen.Resize(fyne.NewSize(30, 50))
-			imagen.Move(fyne.NewPos(40, -10))
+    for i := 0; i < 100; i++ {
+        wg.Add(1)
+        go func(id int) {
+            auto := models.NewAuto(id)
+            imagen := auto.GetImagenEntrada()
+            imagen.Resize(fyne.NewSize(30, 50))
+            imagen.Move(fyne.NewPos(40, -10))
 
-			contenedor.Add(imagen)
-			contenedor.Refresh()
+            contenedor.Add(imagen)
+            contenedor.Refresh()
 
-			auto.Iniciar(p, contenedor, &wg)
-		}(i)
-		var poisson = generarPoisson(float64(2))
-		time.Sleep(time.Second * time.Duration(poisson))
-	}
+            auto.Iniciar(p, contenedor, &wg)
 
-	wg.Wait()
+            // Espera antes de agregar el siguiente auto para permitir que la interfaz se actualice.
+            time.Sleep(time.Millisecond * 200)
+        }(i)
+        var poisson = generarPoisson(float64(2))
+        time.Sleep(time.Second * time.Duration(poisson))
+    }
+
+    wg.Wait()
 }
+
 
 func generarPoisson(lambda float64) float64 {
 	poisson := distuv.Poisson{Lambda: lambda, Src: nil}

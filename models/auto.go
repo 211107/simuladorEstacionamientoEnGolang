@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -21,14 +22,12 @@ type Auto struct {
 
 func NewAuto(id int) *Auto {
 	imagenEntrada := canvas.NewImageFromURI(storage.NewFileURI("./assets/carEntra.png"))
-	imagenEspera := canvas.NewImageFromURI(storage.NewFileURI("./assets/carEspera.png"))
 	imagenSalida := canvas.NewImageFromURI(storage.NewFileURI("./assets/carSalida.png"))
 	return &Auto{
 		id:              id,
 		tiempoLim:       time.Duration(rand.Intn(50)+50) * time.Second,
 		espacioAsignado: 0,
 		imagenEntrada:   imagenEntrada,
-		imagenEspera:    imagenEspera,
 		imagenSalida:    imagenSalida,
 	}
 }
@@ -71,47 +70,81 @@ func (a *Auto) Entrar(p *Estacionamiento, contenedor *fyne.Container) {
 
 	p.GetPuertaMu().Unlock()
 	contenedor.Refresh()
+	fmt.Printf("Auto %d ocupó el lugar %d.\n", a.GetId(), a.espacioAsignado)
+	 // Pausa de 5 segundos antes de continuar.
+	 time.Sleep(5 * time.Second)
 }
 
 func (a *Auto) Salir(p *Estacionamiento, contenedor *fyne.Container) {
-	<-p.GetEspacios()
-	p.GetPuertaMu().Lock()
+    // Espera a que haya un espacio disponible en el estacionamiento.
+    <-p.GetEspacios()
+    // Bloquea la puerta para evitar que otros autos entren o salgan al mismo tiempo.
+    p.GetPuertaMu().Lock()
 
-	spacesArray := p.GetEspaciosArray()
-	spacesArray[a.espacioAsignado] = false
-	p.SetEspaciosArray(spacesArray)
+    // Obtiene el array de espacios actual del estacionamiento.
+    spacesArray := p.GetEspaciosArray()
 
-	p.GetPuertaMu().Unlock()
+    // Marca el espacio asignado por el auto como disponible.
+    spacesArray[a.espacioAsignado] = false
+	fmt.Printf("Auto %d salió. Espacio %d marcado como disponible.\n", a.GetId(), a.espacioAsignado)
 
-	contenedor.Remove(a.imagenEspera)
-	a.imagenSalida.Resize(fyne.NewSize(30, 50))
-	a.imagenSalida.Move(fyne.NewPos(90, 290))
+    // Actualiza el array de espacios del estacionamiento.
+    p.SetEspaciosArray(spacesArray)
 
-	contenedor.Add(a.imagenSalida)
+    // Desbloquea la puerta para permitir que otros autos entren o salgan.
+    p.GetPuertaMu().Unlock()
+
+    // Elimina la imagen de espera del auto del contenedor.
+    contenedor.Remove(a.imagenEntrada)
 	contenedor.Refresh()
 
-	for i := 0; i < 10; i++ {
-		a.imagenSalida.Move(fyne.NewPos(a.imagenSalida.Position().X, a.imagenSalida.Position().Y-30))
-		time.Sleep(time.Millisecond * 200)
-	}
+    // Ajusta el tamaño y la posición de la imagen de salida.
+    a.imagenSalida.Resize(fyne.NewSize(30, 50))
+    a.imagenSalida.Move(fyne.NewPos(90, 290))
 
-	contenedor.Remove(a.imagenSalida)
-	contenedor.Refresh()
+    // Agrega la imagen de salida al contenedor y actualiza la interfaz.
+    contenedor.Add(a.imagenSalida)
+    contenedor.Refresh()
+
+    // Realiza una animación de movimiento hacia arriba durante 10 iteraciones.
+    for i := 0; i < 10; i++ {
+        // Mueve la imagen hacia arriba.
+        a.imagenSalida.Move(fyne.NewPos(a.imagenSalida.Position().X, a.imagenSalida.Position().Y-40))
+		time.Sleep(time.Millisecond * 100)
+    }
+
+    // Elimina la imagen de salida del contenedor y actualiza la interfaz.
+    contenedor.Remove(a.imagenSalida)
+    contenedor.Refresh()  // Asegúrate de actualizar el contenedor
+
 }
+
 
 func (a *Auto) Iniciar(p *Estacionamiento, contenedor *fyne.Container, wg *sync.WaitGroup) {
-	a.Avanzar(9)
+	a.Avanzar(10)
 
 	a.Entrar(p, contenedor)
+	 // Pausa adicional de 5 segundos antes de iniciar el proceso de salida.
+	 time.Sleep(5 * time.Second)
+	  // Inicia un temporizador de 5 segundos antes de comenzar la salida.
+	  timer := time.NewTimer(5 * time.Second)
+	
 
-	time.Sleep(a.tiempoLim)
-
-	contenedor.Remove(a.imagenEntrada)
-	a.imagenEspera.Resize(fyne.NewSize(50, 30))
-	p.ColaSalida(contenedor, a.imagenEspera)
-	a.Salir(p, contenedor)
-	wg.Done()
-}
+	    // Usa un select para esperar tanto el temporizador como la finalización del temporizador.
+		select {
+		case <-timer.C:
+			// El temporizador ha expirado, procede con la salida del auto.
+			contenedor.Remove(a.imagenEntrada)
+			contenedor.Refresh()
+			contenedor.Add(a.imagenSalida)
+			contenedor.Refresh()
+			//a.imagenSalida.Resize(fyne.NewSize(50, 30))
+			p.ColaSalida(contenedor, a.imagenEntrada)
+			a.Salir(p, contenedor)
+			
+			wg.Done()
+		}
+	}
 
 func (a *Auto) Avanzar(pasos int) {
 	for i := 0; i < pasos; i++ {
@@ -124,8 +157,22 @@ func (a *Auto) GetId() int {
 	return a.id
 }
 
-func (a *Auto) GetImagenEntrada() *canvas.Image {
-	return a.imagenEntrada
+// Agrega estos métodos para proporcionar acceso a los campos necesarios
+func (a *Auto) GetTiempoLim() time.Duration {
+    return a.tiempoLim
 }
+
+func (a *Auto) GetImagenEntrada() *canvas.Image {
+    return a.imagenEntrada
+}
+
+func (a *Auto) GetImagenSalida() *canvas.Image {
+    return a.imagenSalida
+}
+
+func (a *Auto) GetImagenEspera() *canvas.Image {
+    return a.imagenEspera
+}
+
 
 

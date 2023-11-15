@@ -2,6 +2,7 @@ package models
 
 import (
 	"sync"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -38,7 +39,19 @@ func (p *Estacionamiento) SetEspaciosArray(espaciosArray [20]bool) {
 }
 
 func (p *Estacionamiento) ColaSalida(contenedor *fyne.Container, imagen *canvas.Image) {
-	imagen.Move(fyne.NewPos(80, 20))
-	contenedor.Add(imagen)
-	contenedor.Refresh()
+    // Mueve la imagen al lugar deseado
+    imagen.Move(fyne.NewPos(80, 20))
+
+    // Agrega la imagen al contenedor y actualiza la interfaz
+    contenedor.Add(imagen)
+    contenedor.Refresh()
+
+    // Espera un momento (ajusta el tiempo según sea necesario)
+    time.AfterFunc(2*time.Second, func() {
+        // Elimina la imagen del contenedor y actualiza la interfaz
+        contenedor.Remove(imagen)
+        contenedor.Refresh()
+    })
 }
+
+
