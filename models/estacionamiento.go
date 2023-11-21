@@ -8,50 +8,50 @@ import (
 	"fyne.io/fyne/v2/canvas"
 )
 
+
 type Estacionamiento struct {
-	espacios      chan int
-	puerta        *sync.Mutex
-	espaciosArray [20]bool
+	espacios      chan int      // Canal para representar los espacios disponibles
+	puerta        *sync.Mutex  
+	arrayEspacios [20]bool      
 }
 
-func NewEstacionamiento(espacios chan int, puertaMu *sync.Mutex) *Estacionamiento {
+// NuevoEstacionamiento crea una nueva instancia de Estacionamiento.
+func NuevoEstacionamiento(espacios chan int, puertaMu *sync.Mutex) *Estacionamiento {
 	return &Estacionamiento{
-		espacios:      espacios,
-		puerta:        puertaMu,
-		espaciosArray: [20]bool{},
+		espacios: espacios,
+		puerta:   puertaMu,
 	}
 }
 
-func (p *Estacionamiento) GetEspacios() chan int {
-	return p.espacios
+// ObtenerEspacio devuelve el canal de espacios del estacionamiento.
+func (e *Estacionamiento) ObtenerEspacio() chan int {
+	return e.espacios
 }
 
-func (p *Estacionamiento) GetPuertaMu() *sync.Mutex {
-	return p.puerta
+// ObtenerPuerta devuelve el puntero al Mutex utilizado para gestionar el acceso a recursos compartidos.
+func (e *Estacionamiento) ObtenerPuerta() *sync.Mutex {
+	return e.puerta
 }
 
-func (p *Estacionamiento) GetEspaciosArray() [20]bool {
-	return p.espaciosArray
+// ObtenerArrayEspacios devuelve el array que representa el estado de ocupación de los espacios.
+func (e *Estacionamiento) ObtenerArrayEspacios() [20]bool {
+	return e.arrayEspacios
 }
 
-func (p *Estacionamiento) SetEspaciosArray(espaciosArray [20]bool) {
-	p.espaciosArray = espaciosArray
-}
-
-func (p *Estacionamiento) ColaSalida(contenedor *fyne.Container, imagen *canvas.Image) {
-    // Mueve la imagen al lugar deseado
-    imagen.Move(fyne.NewPos(80, 20))
-
-    // Agrega la imagen al contenedor y actualiza la interfaz
-    contenedor.Add(imagen)
-    contenedor.Refresh()
-
-    // Espera un momento (ajusta el tiempo según sea necesario)
-    time.AfterFunc(2*time.Second, func() {
-        // Elimina la imagen del contenedor y actualiza la interfaz
-        contenedor.Remove(imagen)
-        contenedor.Refresh()
-    })
+// EstablecerArrayEspacios establece el array que representa el estado de ocupación de los espacios.
+func (e *Estacionamiento) EstablecerArrayEspacios(arrayEspacios [20]bool) {
+	e.arrayEspacios = arrayEspacios
 }
 
 
+func (e *Estacionamiento) ColaSalida(contenedor *fyne.Container, imagen *canvas.Image) {
+	imagen.Move(fyne.NewPos(80, 20))
+	contenedor.Add(imagen)
+	contenedor.Refresh()
+
+	// Utiliza un temporizador para quitar la imagen
+	time.AfterFunc(2*time.Second, func() {
+		contenedor.Remove(imagen)
+		contenedor.Refresh()
+	})
+}

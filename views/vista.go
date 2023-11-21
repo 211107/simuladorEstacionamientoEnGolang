@@ -1,26 +1,25 @@
-
 package views
 
 import (
 	"simulador/scenes"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 )
 
-type MainView struct{}
+type VistaPrincipal struct{}
 
-func NewMainView() *MainView {
-	return &MainView{}
+func NuevaVistaPrincipal() *VistaPrincipal {
+	return &VistaPrincipal{}
 }
 
-func (v *MainView) Run() {
+func (v *VistaPrincipal) Ejecutar() {
 	myApp := app.New()
-	window := myApp.NewWindow("Estacionamiento concurrente")
-	window.CenterOnScreen()
-	window.SetFixedSize(true)
-	window.Resize(fyne.NewSize(700, 400))
-
-	mainScene := scenes.NewMainScene(window)
-	mainScene.Show()
-	window.ShowAndRun()
+	ventana := myApp.NewWindow("Estacionamiento")
+	ventana.CenterOnScreen()
+	ventana.SetFixedSize(true)
+	ventana.Resize(fyne.NewSize(700, 400))
+	escenaPrincipal := scenes.NuevaEscenaPrincipal(ventana)
+	escenaPrincipal.Mostrar()
+	ventana.ShowAndRun()
 }

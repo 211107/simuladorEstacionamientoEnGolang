@@ -3,6 +3,6 @@ package main
 import "simulador/views"
 
 func main() {
-	mainView := views.NewMainView()
-	mainView.Run()
+	vistaPrincipal := views.NuevaVistaPrincipal()
+	vistaPrincipal.Ejecutar()
 }
