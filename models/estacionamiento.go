@@ -23,12 +23,12 @@ func NuevoEstacionamiento(espacios chan int, puertaMu *sync.Mutex) *Estacionamie
 	}
 }
 
-// ObtenerEspacio devuelve el canal de espacios del estacionamiento.
+// Obtener Espacio devuelve el canal de espacios del estacionamiento.
 func (e *Estacionamiento) ObtenerEspacio() chan int {
 	return e.espacios
 }
 
-// ObtenerPuerta devuelve el puntero al Mutex utilizado para gestionar el acceso a recursos compartidos.
+// Obtener Puerta devuelve el puntero al Mutex .
 func (e *Estacionamiento) ObtenerPuerta() *sync.Mutex {
 	return e.puerta
 }

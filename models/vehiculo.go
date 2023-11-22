@@ -90,7 +90,7 @@ func (v *Vehiculo) Salir(p *Estacionamiento, contenedor *fyne.Container) {
 	espacios[v.espacioAsignado] = false
 	fmt.Printf("Auto %d salió. Espacio %d marcado como disponible.\n", v.ObtenerID(), v.espacioAsignado)
 	p.EstablecerArrayEspacios(espacios)
-	p.ObtenerPuerta().Unlock()
+	p.ObtenerPuerta().Unlock() //libera
 	contenedor.Remove(v.imagenEntrada)
 	contenedor.Refresh()
 	v.imagenSalida.Resize(fyne.NewSize(30, 50))

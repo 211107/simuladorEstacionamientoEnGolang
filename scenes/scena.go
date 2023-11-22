@@ -52,8 +52,7 @@ func (s *EscenaPrincipal) Mostrar() {
 func (s *EscenaPrincipal) Ejecutar() {
 	p := models.NuevoEstacionamiento(make(chan int, 20), &sync.Mutex{})
 	contenedor := s.ventana.Content().(*fyne.Container)
-
-	var wg sync.WaitGroup
+	var wg sync.WaitGroup//espera a que las rutinas terminen su ejecusion 
 
 	// Inicia 100 goroutines para simular vehículos ingresando al estacionamiento.
 	for i := 0; i < 100; i++ {
@@ -72,7 +71,7 @@ func (s *EscenaPrincipal) Ejecutar() {
 		poisson := generarPoisson(2)
 		time.Sleep(time.Second * time.Duration(poisson))
 	}
-	// Espera a que todas las goroutines
+	// Espera a que todas las goroutines terminen y no pase mas alla 
 	wg.Wait()
 }
 
